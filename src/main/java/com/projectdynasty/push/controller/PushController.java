@@ -81,6 +81,13 @@ public class PushController {
                     builder = builder.badge(object.getInt(s) + "");
                     break;
                 }
+                case "custom": {
+                    if (!object.has("customName"))
+                        break;
+                    builder = builder.custom(object.getJSONObject(s));
+                    builder = builder.customName(object.getString("customName"));
+                    break;
+                }
             }
         }
         return builder;
