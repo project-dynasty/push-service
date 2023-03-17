@@ -24,7 +24,10 @@ public class PushController {
             if (device.getToken() == null || device.getToken().length() == 0) continue;
             PushNotification.PushNotificationBuilder builder = sendMessage(body);
             builder = builder.deviceToken(device.getToken());
-            builder.build().send();
+            if (body.has("live") && body.get("live") instanceof Boolean)
+                builder.build().send(body.getBoolean("live"));
+            else
+                builder.build().send();
         }
         return new ResponseData("{}", StatusCode.OK);
     }
@@ -35,7 +38,10 @@ public class PushController {
         if (device == null) return new ResponseData("{}", StatusCode.NOT_FOUND);
         PushNotification.PushNotificationBuilder builder = sendMessage(body);
         builder = builder.deviceToken(token);
-        builder.build().send();
+        if (body.has("live") && body.get("live") instanceof Boolean)
+            builder.build().send(body.getBoolean("live"));
+        else
+            builder.build().send();
         return new ResponseData("{}", StatusCode.OK);
     }
 

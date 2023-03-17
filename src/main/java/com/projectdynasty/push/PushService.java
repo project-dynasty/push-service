@@ -3,6 +3,8 @@ package com.projectdynasty.push;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.eatthepath.pushy.apns.ApnsClient;
+import com.eatthepath.pushy.apns.ApnsClientBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import de.alexanderwodarz.code.JavaCore;
@@ -10,14 +12,13 @@ import de.alexanderwodarz.code.database.Database;
 import de.alexanderwodarz.code.model.varible.VaribleMap;
 import de.alexanderwodarz.code.web.WebCore;
 import de.alexanderwodarz.code.web.rest.annotation.RestApplication;
-import com.eatthepath.pushy.apns.ApnsClient;
-import com.eatthepath.pushy.apns.ApnsClientBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.File;
+import java.util.HashMap;
 
 @RestApplication
 public class PushService {
@@ -26,8 +27,8 @@ public class PushService {
     public static final JsonConfig CONFIG = new JsonConfig(new File("config.json"));
     public static Database DATABASE;
     public static JWTVerifier VERIFIER;
-    public static ApnsClient CLIENT;
     public static JwtUtils JWT_UTILS;
+    public static HashMap<Boolean, ApnsClient> CLIENTS = new HashMap<>();
 
     @SneakyThrows
     public static void main(String[] args) {
@@ -37,10 +38,18 @@ public class PushService {
         DatabaseConfig databaseConfig = CONFIG.get("db", DatabaseConfig.class);
         DATABASE = new Database(databaseConfig.getHost(), databaseConfig.getUsername(), databaseConfig.getPassword(), databaseConfig.getDb());
 
-        CLIENT = new ApnsClientBuilder()
+        boolean live = CONFIG.get("apns", ApnsConfig.class).isLive();
+
+        CLIENTS.put(live, new ApnsClientBuilder()
                 .setApnsServer(CONFIG.get("apns", ApnsConfig.class).isLive() ? ApnsClientBuilder.PRODUCTION_APNS_HOST : ApnsClientBuilder.DEVELOPMENT_APNS_HOST)
                 .setClientCredentials(new File(CONFIG.get("apns", ApnsConfig.class).getPath()), CONFIG.get("apns", ApnsConfig.class).getPassword())
-                .build();
+                .build());
+        if(live){
+            CLIENTS.put(false, new ApnsClientBuilder()
+                    .setApnsServer(ApnsClientBuilder.DEVELOPMENT_APNS_HOST)
+                    .setClientCredentials(new File(CONFIG.get("apns", ApnsConfig.class).getPath()), CONFIG.get("apns", ApnsConfig.class).getPassword())
+                    .build());
+        }
         JWT_UTILS = new JwtUtils();
         VaribleMap map = new VaribleMap();
         map.put("port", "7202");

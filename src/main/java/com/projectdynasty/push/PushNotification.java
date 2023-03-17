@@ -1,5 +1,6 @@
 package com.projectdynasty.push;
 
+import com.eatthepath.pushy.apns.ApnsClient;
 import com.eatthepath.pushy.apns.util.*;
 import lombok.Builder;
 import org.json.JSONObject;
@@ -27,6 +28,14 @@ public class PushNotification {
     }
 
     public void send() {
+        send(PushService.CLIENTS.get(PushService.CONFIG.get("apns", PushService.ApnsConfig.class).isLive()));
+    }
+
+    public void send(boolean live) {
+        send(PushService.CLIENTS.get(live));
+    }
+
+    public void send(ApnsClient client) {
         ApnsPayloadBuilder payloadBuilder = new SimpleApnsPayloadBuilder();
         payloadBuilder.setAlertBody(message);
         if (timeSensitive) payloadBuilder.setInterruptionLevel(InterruptionLevel.TIME_SENSITIVE);
@@ -38,9 +47,8 @@ public class PushNotification {
 
         String payload = payloadBuilder.build();
         String token = TokenUtil.sanitizeTokenString(deviceToken);
-
         SimpleApnsPushNotification pushNotification = new SimpleApnsPushNotification(token, PushService.CONFIG.get("apns", PushService.ApnsConfig.class).getTopic(), payload);
-        PushService.CLIENT.sendNotification(pushNotification);
+        client.sendNotification(pushNotification);
     }
 
 }
